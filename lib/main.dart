@@ -14,7 +14,7 @@ class MorphKastenApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'BI-Vital',
+      title: 'Morphologischer Kasten',
       home: const MyHomePage(),
       themeMode: ThemeMode.system,
       theme: MyThemes.lightTheme,
