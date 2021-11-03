@@ -14,22 +14,94 @@ class _MyHomePageState extends State<MyHomePage> {
   int sRow = -1, sColumn = -1;
   int eRow = -1, eColumn = -1;
   TextEditingController myController = TextEditingController();
-
-  @override
-  void initState() {
-    data = [
-      ["111\na", "22211111", "333"],
-      ["444", "555"],
-      ["666"]
-    ];
-    super.initState();
-  }
+  bool edit = false;
 
   @override
   Widget build(BuildContext context) {
-    //return FutureBuilder(
-    //future: LogCSV().readFile(),
-    //builder: (BuildContext context, AsyncSnapshot<void> snapshot) {
+    List<TableRow> table = edit ? buildTableEdit() : buildTable();
+    return Scaffold(
+      body: Table(
+        defaultColumnWidth: const IntrinsicColumnWidth(),
+        children: table,
+      ),
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        children: [
+          buildDeleteButton(),
+          buildLoadButton(),
+          buildSaveButton(),
+          buildEditButton(),
+        ],
+      ),
+    );
+  }
+
+  SpeedDialChild buildDeleteButton() {
+    return SpeedDialChild(
+      child: const Icon(CupertinoIcons.delete, color: Colors.white),
+      label: "Delete",
+      onTap: () {
+        LogCSV().clearData();
+        setState(() {});
+      },
+    );
+  }
+
+  SpeedDialChild buildLoadButton() {
+    return SpeedDialChild(
+      child: const Icon(CupertinoIcons.square_arrow_up, color: Colors.white),
+      label: "Import",
+      onTap: () async {
+        await LogCSV().importCSV();
+        setState(() {});
+      },
+    );
+  }
+
+  SpeedDialChild buildSaveButton() {
+    return SpeedDialChild(
+      child: const Icon(CupertinoIcons.cloud_download, color: Colors.white),
+      label: "Download",
+      onTap: () => LogCSV().exportCSV(),
+    );
+  }
+
+  SpeedDialChild buildEditButton() {
+    return SpeedDialChild(
+      child: edit ? const Icon(CupertinoIcons.pencil_slash, color: Colors.white) : const Icon(CupertinoIcons.pen, color: Colors.white),
+      label: edit ? "End editing" : "Edit",
+      onTap: () {
+        setState(() => edit = !edit);
+      },
+    );
+  }
+
+  List<TableRow> buildTable() {
+    int maxCellInRow = 0;
+    for (List<String> row in data) maxCellInRow = row.length > maxCellInRow ? row.length : maxCellInRow;
+    List<TableRow> table = <TableRow>[];
+    int i = 0;
+    for (int r = 0; r < data.length; r++) {
+      List<Widget> newRow = <Widget>[];
+      for (i = 0; i < data[r].length; i++) {
+        if (i == data[r].length - 1) {
+          if (i == 0)
+            newRow.add(buildTitleCell(data[r][i], r, i));
+          else
+            newRow.add(buildCell(data[r][i], r, i));
+          for (int j = 0; j < maxCellInRow - i - 1; j++) newRow.add(buildPlaceHolder());
+        } else if (i == 0) {
+          newRow.add(buildTitleCell(data[r][i], r, i));
+        } else {
+          newRow.add(buildCell(data[r][i], r, i));
+        }
+      }
+      table.add(TableRow(children: newRow));
+    }
+    return table;
+  }
+
+  List<TableRow> buildTableEdit() {
     int maxCellInRow = 0;
     for (List<String> row in data) maxCellInRow = row.length > maxCellInRow ? row.length : maxCellInRow;
     maxCellInRow += 1;
@@ -50,133 +122,75 @@ class _MyHomePageState extends State<MyHomePage> {
           newRow.add(buildCell(data[r][i], r, i));
         }
       }
-      table.add(TableRow(
-        children: newRow,
-      ));
+      table.add(TableRow(children: newRow));
     }
-    return Scaffold(
-      body: Table(
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        children: table,
-      ),
-      floatingActionButton: SpeedDial(
-        animatedIcon: AnimatedIcons.menu_close,
-        children: [
-          SpeedDialChild(
-            child: const Icon(CupertinoIcons.floppy_disk, color: Colors.white),
-            label: "Save",
-            onTap: () async {
-              await LogCSV().writeFile();
-              setState(() {});
-            },
-          ),
-          SpeedDialChild(
-            child: const Icon(CupertinoIcons.square_arrow_down, color: Colors.white),
-            label: "Load",
-            onTap: () async {
-              await LogCSV().readFile();
-              setState(() {});
-            },
-          ),
-          SpeedDialChild(
-            child: const Icon(CupertinoIcons.delete, color: Colors.white),
-            label: "Delete",
-            onTap: () {
-              LogCSV().clearData();
-              setState(() {});
-            },
-          ),
-        ],
-      ),
-    );
-    //},
-    //);
+    if (data.isEmpty)
+      table.add(TableRow(children: [buildAddCell(0, 0)]));
+    else
+      table.add(
+        TableRow(
+          children: [
+            buildAddCell(data.length, 0),
+            ...List.generate(
+              maxCellInRow - 1,
+              (index) => buildPlaceHolder(),
+            ),
+          ],
+        ),
+      );
+    return table;
   }
 
   Widget buildTitleCell(String text, int row, int column) {
-    return TableCell(
-      verticalAlignment: TableCellVerticalAlignment.fill,
-      child: MouseRegion(
-        child: row == sRow && column == sColumn
-            ? Stack(
-                alignment: AlignmentDirectional.topEnd,
-                children: [
-                  wrapper(
-                    Text(
-                      text,
-                      textAlign: TextAlign.center,
-                    ),
-                    Colors.red,
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      CupertinoIcons.pencil_circle_fill,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              )
-            : wrapper(
-                Text(
-                  text,
-                  textAlign: TextAlign.center,
-                ),
-                Colors.red,
-              ),
-        onEnter: (p) => setState(() {
-          sRow = row;
-          sColumn = column;
-        }),
-        onExit: (p) => setState(() {
-          sRow = -1;
-          sColumn = -1;
-        }),
-      ),
-    );
+    if (edit)
+      return TableCell(
+        verticalAlignment: TableCellVerticalAlignment.fill,
+        child: mouseRegionWrapper(
+          row,
+          column,
+          wrapper(
+            Text(
+              text,
+              textAlign: TextAlign.center,
+            ),
+            Colors.red,
+          ),
+        ),
+      );
+    else
+      return wrapper(
+        Text(
+          text,
+          textAlign: TextAlign.center,
+        ),
+        Colors.red,
+      );
   }
 
   Widget buildCell(String text, int row, int column) {
-    return TableCell(
-      verticalAlignment: TableCellVerticalAlignment.fill,
-      child: MouseRegion(
-        child: row == sRow && column == sColumn
-            ? Stack(
-                alignment: AlignmentDirectional.topEnd,
-                children: [
-                  wrapper(
-                    Text(
-                      text,
-                      textAlign: TextAlign.center,
-                    ),
-                    Colors.black,
-                  ),
-                  IconButton(
-                    onPressed: () {},
-                    icon: const Icon(
-                      CupertinoIcons.pencil_circle_fill,
-                      color: Colors.grey,
-                    ),
-                  ),
-                ],
-              )
-            : wrapper(
-                Text(
-                  text,
-                  textAlign: TextAlign.center,
-                ),
-                Colors.black,
-              ),
-        onEnter: (p) => setState(() {
-          sRow = row;
-          sColumn = column;
-        }),
-        onExit: (p) => setState(() {
-          sRow = -1;
-          sColumn = -1;
-        }),
-      ),
-    );
+    if (edit)
+      return TableCell(
+        verticalAlignment: TableCellVerticalAlignment.fill,
+        child: mouseRegionWrapper(
+          row,
+          column,
+          wrapper(
+            Text(
+              text,
+              textAlign: TextAlign.center,
+            ),
+            Colors.black,
+          ),
+        ),
+      );
+    else
+      return wrapper(
+        Text(
+          text,
+          textAlign: TextAlign.center,
+        ),
+        Colors.black,
+      );
   }
 
   Widget buildAddCell(int row, int column) {
@@ -197,7 +211,11 @@ class _MyHomePageState extends State<MyHomePage> {
                   ),
                   IconButton(
                     onPressed: () => setState(() {
-                      data[row].add(myController.text);
+                      if (data.length < row + 1)
+                        data.add([myController.text]);
+                      else
+                        data[row].add(myController.text);
+                      myController.clear();
                     }),
                     icon: const Icon(CupertinoIcons.check_mark_circled),
                   ),
@@ -223,12 +241,10 @@ class _MyHomePageState extends State<MyHomePage> {
     );
   }
 
-  Widget buildPlaceHolder() {
-    return wrapper(
-      Container(),
-      Colors.transparent,
-    );
-  }
+  Widget buildPlaceHolder() => wrapper(
+        Container(),
+        Colors.transparent,
+      );
 
   Widget wrapper(Widget child, Color color) {
     return Padding(
@@ -243,6 +259,34 @@ class _MyHomePageState extends State<MyHomePage> {
           child: Center(child: child),
         ),
       ),
+    );
+  }
+
+  Widget mouseRegionWrapper(int row, int column, Widget child) {
+    return MouseRegion(
+      child: row == sRow && column == sColumn
+          ? Stack(
+              alignment: AlignmentDirectional.topEnd,
+              children: [
+                child,
+                IconButton(
+                  onPressed: () {},
+                  icon: const Icon(
+                    CupertinoIcons.pencil_circle_fill,
+                    color: Colors.grey,
+                  ),
+                ),
+              ],
+            )
+          : child,
+      onEnter: (p) => setState(() {
+        sRow = row;
+        sColumn = column;
+      }),
+      onExit: (p) => setState(() {
+        sRow = -1;
+        sColumn = -1;
+      }),
     );
   }
 }
