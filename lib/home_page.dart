@@ -1,7 +1,13 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_speed_dial/flutter_speed_dial.dart';
+import 'package:morph_kasten/color_picker.dart';
 import 'package:morph_kasten/data.dart';
+import 'package:morph_kasten/theme_provider.dart';
+
+Color backgroundColor = const Color(0xff2f3437);
+Color titleColor = Colors.red;
+Color cellColor = Colors.black;
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({Key? key}) : super(key: key);
@@ -20,10 +26,17 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     List<TableRow> table = edit ? buildTableEdit() : buildTable();
     return Scaffold(
-      body: Table(
-        defaultColumnWidth: const IntrinsicColumnWidth(),
-        children: table,
-      ),
+      backgroundColor: backgroundColor,
+      body: edit
+          ? Column(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                buildTableWidget(table),
+                colorPickers(),
+              ],
+            )
+          : buildTableWidget(table),
       floatingActionButton: SpeedDial(
         animatedIcon: AnimatedIcons.menu_close,
         children: [
@@ -33,6 +46,13 @@ class _MyHomePageState extends State<MyHomePage> {
           buildEditButton(),
         ],
       ),
+    );
+  }
+
+  Widget buildTableWidget(List<TableRow> table) {
+    return Table(
+      defaultColumnWidth: const IntrinsicColumnWidth(),
+      children: table,
     );
   }
 
@@ -152,8 +172,9 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               text,
               textAlign: TextAlign.center,
+              style: TextStyle(color: HSLColor.fromColor(titleColor).lightness > 0.5 ? MyThemes.lightTheme.primaryColor : MyThemes.darkTheme.primaryColor),
             ),
-            Colors.red,
+            titleColor,
           ),
         ),
       );
@@ -162,8 +183,9 @@ class _MyHomePageState extends State<MyHomePage> {
         Text(
           text,
           textAlign: TextAlign.center,
+          style: TextStyle(color: HSLColor.fromColor(titleColor).lightness > 0.5 ? MyThemes.lightTheme.primaryColor : MyThemes.darkTheme.primaryColor),
         ),
-        Colors.red,
+        titleColor,
       );
   }
 
@@ -178,8 +200,9 @@ class _MyHomePageState extends State<MyHomePage> {
             Text(
               text,
               textAlign: TextAlign.center,
+              style: TextStyle(color: HSLColor.fromColor(titleColor).lightness > 0.5 ? MyThemes.lightTheme.primaryColor : MyThemes.darkTheme.primaryColor),
             ),
-            Colors.black,
+            cellColor,
           ),
         ),
       );
@@ -188,58 +211,57 @@ class _MyHomePageState extends State<MyHomePage> {
         Text(
           text,
           textAlign: TextAlign.center,
+          style: TextStyle(color: HSLColor.fromColor(titleColor).lightness > 0.5 ? MyThemes.lightTheme.primaryColor : MyThemes.darkTheme.primaryColor),
         ),
-        Colors.black,
+        cellColor,
       );
   }
 
-  Widget buildAddCell(int row, int column) {
-    return GestureDetector(
-      child: eRow == row && eColumn == column
-          ? wrapper(
-              Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  SizedBox(
-                    width: 100,
-                    child: CupertinoTextField(
-                      controller: myController,
-                      maxLines: 1,
-                      clearButtonMode: OverlayVisibilityMode.always,
-                      style: const TextStyle(color: Colors.white),
+  Widget buildAddCell(int row, int column) => GestureDetector(
+        child: eRow == row && eColumn == column
+            ? wrapper(
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      width: 100,
+                      child: CupertinoTextField(
+                        controller: myController,
+                        maxLines: 1,
+                        clearButtonMode: OverlayVisibilityMode.always,
+                        style: TextStyle(color: Theme.of(context).primaryColor),
+                      ),
                     ),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(() {
-                      if (data.length < row + 1)
-                        data.add([myController.text]);
-                      else
-                        data[row].add(myController.text);
-                      myController.clear();
-                    }),
-                    icon: const Icon(CupertinoIcons.check_mark_circled),
-                  ),
-                  IconButton(
-                    onPressed: () => setState(() {
-                      eRow = -1;
-                      eColumn = -1;
-                    }),
-                    icon: const Icon(CupertinoIcons.clear_circled),
-                  ),
-                ],
+                    IconButton(
+                      onPressed: () => setState(() {
+                        if (data.length < row + 1)
+                          data.add([myController.text]);
+                        else
+                          data[row].add(myController.text);
+                        myController.clear();
+                      }),
+                      icon: const Icon(CupertinoIcons.check_mark_circled),
+                    ),
+                    IconButton(
+                      onPressed: () => setState(() {
+                        eRow = -1;
+                        eColumn = -1;
+                      }),
+                      icon: const Icon(CupertinoIcons.clear_circled),
+                    ),
+                  ],
+                ),
+                Colors.grey,
+              )
+            : wrapper(
+                const Icon(CupertinoIcons.add),
+                Colors.grey,
               ),
-              Colors.grey,
-            )
-          : wrapper(
-              const Icon(CupertinoIcons.add),
-              Colors.grey,
-            ),
-      onTap: () => setState(() {
-        eRow = row;
-        eColumn = column;
-      }),
-    );
-  }
+        onTap: () => setState(() {
+          eRow = row;
+          eColumn = column;
+        }),
+      );
 
   Widget buildPlaceHolder() => wrapper(
         Container(),
@@ -287,6 +309,28 @@ class _MyHomePageState extends State<MyHomePage> {
         sRow = -1;
         sColumn = -1;
       }),
+    );
+  }
+
+  Widget colorPickers() {
+    return Column(
+      children: [
+        MyColorPicker(
+          title: "Background color",
+          color: backgroundColor,
+          onColorChanged: (color) => setState(() => backgroundColor = color),
+        ),
+        MyColorPicker(
+          title: "Title color",
+          color: titleColor,
+          onColorChanged: (color) => setState(() => titleColor = color),
+        ),
+        MyColorPicker(
+          title: "Cell color",
+          color: cellColor,
+          onColorChanged: (color) => setState(() => cellColor = color),
+        ),
+      ],
     );
   }
 }
